@@ -9,10 +9,13 @@ client/dist/
 
 # Environment and sensitive variables
 .env
-.env.*
+.env.local
+.env.*.local
 *.env
 server/.env
 client/.env
+!*.env.example
+!.env.example
 
 # Local database & storage
 .mysql/

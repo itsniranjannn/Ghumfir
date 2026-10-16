@@ -1,0 +1,131 @@
+/* Ghumfir design tokens
+   Concept: a surveyor's field notebook. Warm paper, ink, Newar-brick terracotta,
+   slate rivers, moss terraces and marigold garlands. Numbers set in mono like a ledger. */
+
+:root {
+  /* palette */
+  --paper: #f4efe6;
+  --paper-2: #ebe4d6;
+  --paper-3: #e1d8c6;
+  --card: #fbf8f2;
+  --ink: #1e1c18;
+  --ink-2: #4a463e;
+  --ink-3: #7a7468;
+  --line: #d9d0bf;
+  --line-strong: #b9ae99;
+
+  --brick: #b4472c;        /* primary: Newar brick / rhododendron */
+  --brick-ink: #8e3520;
+  --brick-wash: #f1ddd3;
+  --slate: #2e4a5a;        /* secondary: river slate */
+  --slate-wash: #dde6e8;
+  --moss: #56683a;         /* nature / ok */
+  --moss-wash: #e2e6d3;
+  --marigold: #d8962a;     /* highlight / budget */
+  --marigold-wash: #f5e6c8;
+  --glacier: #a9c3cb;
+
+  --ok: #4c7a3a;
+  --warn: #b8730f;
+  --bad: #b23a2a;
+
+  --on-brick: #fbf8f2;
+  --contour: rgba(46, 74, 90, 0.16);
+
+  /* type */
+  --f-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --f-body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --f-dev: 'Tiro Devanagari Hindi', 'Nirmala UI', serif;
+
+  --t-2xs: 0.6875rem;
+  --t-xs: 0.75rem;
+  --t-sm: 0.875rem;
+  --t-md: 1rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.375rem;
+  --t-2xl: clamp(1.6rem, 2.6vw, 2.1rem);
+  --t-3xl: clamp(2.1rem, 4.4vw, 3.4rem);
+  --t-hero: clamp(2.7rem, 7.2vw, 6.2rem);
+
+  /* space & shape */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 72px;
+  --s-9: 112px;
+  --r-sm: 4px;
+  --r: 10px;
+  --r-lg: 18px;
+  --max: 1240px;
+  --gutter: clamp(16px, 4vw, 40px);
+
+  --shadow-1: 0 1px 0 rgba(30, 28, 24, 0.05), 0 6px 18px -12px rgba(30, 28, 24, 0.25);
+  --shadow-2: 0 1px 0 rgba(30, 28, 24, 0.06), 0 18px 40px -22px rgba(30, 28, 24, 0.45);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #121518;
+    --paper-2: #181d21;
+    --paper-3: #222a30;
+    --card: #1b2126;
+    --ink: #efe8da;
+    --ink-2: #c6beaf;
+    --ink-3: #8d877c;
+    --line: #2d353b;
+    --line-strong: #46525a;
+    --brick: #e0704f;
+    --brick-ink: #f08f70;
+    --brick-wash: #3a2219;
+    --slate: #9fc1d1;
+    --slate-wash: #1f2d35;
+    --moss: #a3b87a;
+    --moss-wash: #252c1c;
+    --marigold: #e9b04f;
+    --marigold-wash: #3a2e17;
+    --ok: #8fbf73;
+    --warn: #e9b04f;
+    --bad: #ef7a66;
+    --on-brick: #121518;
+    --contour: rgba(159, 193, 209, 0.12);
+    --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.3), 0 6px 18px -12px rgba(0, 0, 0, 0.7);
+    --shadow-2: 0 1px 0 rgba(0, 0, 0, 0.3), 0 18px 40px -22px rgba(0, 0, 0, 0.9);
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --paper: #121518;
+  --paper-2: #181d21;
+  --paper-3: #222a30;
+  --card: #1b2126;
+  --ink: #efe8da;
+  --ink-2: #c6beaf;
+  --ink-3: #8d877c;
+  --line: #2d353b;
+  --line-strong: #46525a;
+  --brick: #e0704f;
+  --brick-ink: #f08f70;
+  --brick-wash: #3a2219;
+  --slate: #9fc1d1;
+  --slate-wash: #1f2d35;
+  --moss: #a3b87a;
+  --moss-wash: #252c1c;
+  --marigold: #e9b04f;
+  --marigold-wash: #3a2e17;
+  --ok: #8fbf73;
+  --warn: #e9b04f;
+  --bad: #ef7a66;
+  --on-brick: #121518;
+  --contour: rgba(159, 193, 209, 0.12);
+  --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.3), 0 6px 18px -12px rgba(0, 0, 0, 0.7);
+  --shadow-2: 0 1px 0 rgba(0, 0, 0, 0.3), 0 18px 40px -22px rgba(0, 0, 0, 0.9);
+  color-scheme: dark;
+}

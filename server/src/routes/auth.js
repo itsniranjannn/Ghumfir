@@ -112,9 +112,19 @@ r.get('/verify', ah(async (req, res) => {
   const { token } = req.query;
   if (!token) return res.status(400).json({ error: 'Missing verification token' });
   const [user] = await query('SELECT * FROM users WHERE verify_token = ?', [String(token)]);
-  if (!user) return res.status(400).json({ error: 'Verification link is invalid or has already been used' });
-  await query('UPDATE users SET is_verified = 1, verify_token = NULL WHERE id = ?', [user.id]);
-  res.json({ ok: true, message: 'Email verified successfully! You can now access all features.' });
+  if (!user) {
+    return res.status(400).json({ error: 'Verification link is invalid or has expired' });
+  }
+  if (!user.is_verified) {
+    await query('UPDATE users SET is_verified = 1 WHERE id = ?', [user.id]);
+  }
+  const [updatedUser] = await query('SELECT * FROM users WHERE id = ?', [user.id]);
+  res.json({
+    ok: true,
+    message: 'Email verified successfully! You are all set to explore Nepal.',
+    token: signToken(updatedUser),
+    user: publicUser(updatedUser),
+  });
 }));
 
 // POST /api/auth/resend-verification

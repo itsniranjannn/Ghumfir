@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Mail } from 'lucide-react';
@@ -6,7 +6,7 @@ import { Page, Brand } from '../components/Layout.jsx';
 import Contours from '../components/Contours.jsx';
 import { Chips, CustomSelect } from '../components/Bits.jsx';
 import { SplitWords } from '../components/Motion.jsx';
-import { api } from '../lib/api.js';
+import { api, tokenStore } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import { useDocumentTitle, useMeta, useToast } from '../lib/ui.jsx';
 
@@ -74,7 +74,7 @@ export function Login() {
     setBusy(true);
     try {
       const u = await login(email, password);
-      nav(next || (u.role === 'admin' ? '/admin' : '/trips'), { replace: true });
+      nav(next || (u.role === 'admin' ? '/admin' : '/explore'), { replace: true });
     } catch (err) {
       setError(err.message);
       if (err.unverified || (err.message && err.message.toLowerCase().includes('verify'))) {
@@ -477,33 +477,38 @@ export function VerifyEmail() {
   useDocumentTitle('Verify email');
   const [params] = useSearchParams();
   const token = params.get('token') || '';
+  const { user } = useAuth();
   const [status, setStatus] = useState('pending'); // 'pending' | 'success' | 'error'
   const [message, setMessage] = useState('');
+  const verifiedRef = useRef(false);
 
   useEffect(() => {
+    if (user && user.isVerified) {
+      setStatus('success');
+      setMessage('Your email is already verified! Welcome back.');
+      return;
+    }
     if (!token) {
       setStatus('error');
       setMessage('No verification token was provided in the link.');
       return;
     }
-    let active = true;
+    if (verifiedRef.current) return;
+    verifiedRef.current = true;
+
     api(`/auth/verify?token=${encodeURIComponent(token)}`)
       .then((res) => {
-        if (active) {
-          setStatus('success');
-          setMessage(res.message || 'Email verified successfully! You can now log in to access all features.');
+        if (res.token) {
+          tokenStore.set(res.token);
         }
+        setStatus('success');
+        setMessage(res.message || 'Email verified successfully! You are all set to explore Nepal.');
       })
       .catch((err) => {
-        if (active) {
-          setStatus('error');
-          setMessage(err.message || 'Verification link is invalid or has already expired.');
-        }
+        setStatus('error');
+        setMessage(err.message || 'Verification link is invalid or has already expired.');
       });
-    return () => {
-      active = false;
-    };
-  }, [token]);
+  }, [token, user]);
 
   return (
     <AuthShell
@@ -527,11 +532,14 @@ export function VerifyEmail() {
               </div>
             </div>
             <p className="small muted">
-              Your account email is verified. You can now log in and plan, customize, and save your Nepal journeys.
+              Your account email is verified. You now have full access to explore, plan, and save your Nepal journeys.
             </p>
-            <div className="row" style={{ marginTop: 8 }}>
-              <Link to="/login" className="btn btn-primary">
-                Log in now <ArrowRight size={16} className="arrow" />
+            <div className="row" style={{ marginTop: 12, gap: 10 }}>
+              <Link to="/explore" className="btn btn-primary">
+                Start exploring <ArrowRight size={16} className="arrow" />
+              </Link>
+              <Link to="/login" className="btn btn-quiet">
+                Go to Log in
               </Link>
             </div>
           </>
@@ -542,7 +550,7 @@ export function VerifyEmail() {
               <p style={{ margin: 0, fontWeight: 500 }}>{message}</p>
             </div>
             <p className="small muted">
-              The verification link might have already been used, or it may have expired.
+              The verification link might have already expired or is incomplete.
             </p>
             <div className="row" style={{ marginTop: 8, gap: 12 }}>
               <Link to="/login" className="btn btn-primary">

@@ -155,6 +155,7 @@ r.post('/:id/email', requireAuth, ah(async (req, res) => {
     },
     recipientEmail: recipient,
     senderName: req.user.name,
+    req,
   });
 
   res.json({ ok: true, message: `Itinerary sent successfully to ${recipient}` });

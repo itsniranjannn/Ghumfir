@@ -45,8 +45,8 @@ r.post('/register', ah(async (req, res) => {
   // Send branded welcome and verification emails
   try {
     await Promise.all([
-      sendWelcomeEmail({ to: user.email, name: user.name }),
-      sendVerificationEmail({ to: user.email, name: user.name, token: verifyToken }),
+      sendWelcomeEmail({ to: user.email, name: user.name, req }),
+      sendVerificationEmail({ to: user.email, name: user.name, token: verifyToken, req }),
     ]);
   } catch (err) {
     console.error('[email:register:error]', err.message);
@@ -156,7 +156,7 @@ r.post('/resend-verification', ah(async (req, res) => {
   }
   const verifyToken = crypto.randomBytes(32).toString('hex');
   await query('UPDATE users SET verify_token = ? WHERE id = ?', [verifyToken, user.id]);
-  await sendVerificationEmail({ to: user.email, name: user.name, token: verifyToken });
+  await sendVerificationEmail({ to: user.email, name: user.name, token: verifyToken, req });
   res.json({ ok: true, message: 'Verification email sent! Please check your inbox.' });
 }));
 
@@ -169,7 +169,7 @@ r.post('/forgot-password', ah(async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString('hex');
     await query('UPDATE users SET reset_token = ?, reset_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = ?', [resetToken, user.id]);
     try {
-      await sendPasswordResetEmail({ to: user.email, name: user.name, token: resetToken });
+      await sendPasswordResetEmail({ to: user.email, name: user.name, token: resetToken, req });
     } catch (err) {
       console.error('[email:reset:error]', err.message);
     }

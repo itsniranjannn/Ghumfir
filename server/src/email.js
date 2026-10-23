@@ -2,13 +2,36 @@ import nodemailer from 'nodemailer';
 import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 
-const CLIENT_ORIGIN =
-  process.env.CLIENT_ORIGIN ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'https://ghumfir-nine.vercel.app');
+export function getClientOrigin(req) {
+  if (req) {
+    const origin = req.get('origin');
+    if (origin && !origin.includes('undefined') && !origin.includes('null')) {
+      return origin.replace(/\/+$/, '');
+    }
+    const referer = req.get('referer');
+    if (referer) {
+      try {
+        const u = new URL(referer);
+        return `${u.protocol}//${u.host}`;
+      } catch { /* ignore */ }
+    }
+    const host = req.get('x-forwarded-host') || req.get('host');
+    if (host) {
+      const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+      const proto = isLocal ? 'http' : (req.get('x-forwarded-proto') || 'https');
+      return `${proto}://${host}`.replace(/\/+$/, '');
+    }
+  }
+
+  return (
+    process.env.CLIENT_ORIGIN ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'https://ghumfir-nine.vercel.app')
+  ).replace(/\/+$/, '');
+}
 
 const FROM = process.env.SMTP_FROM || process.env.EMAIL_FROM || '"Ghumfir (घुमफिर)" <noreply@ghumfir.com>';
 const LOGO_PATH = fileURLToPath(new URL('../assets/logo.png', import.meta.url));
@@ -48,8 +71,9 @@ function getTransporter() {
  * Warm Himalayan paper palette (#F4EFE6), Terra cotta brand accent (#B4472C),
  * Clean typography, embossed elevation cards, and authentic Ghumfir logo branding.
  */
-function emailShell({ title, badge, content, callToAction, tipText }) {
-  const logoUrl = `${CLIENT_ORIGIN}/logo.png`;
+function emailShell({ title, badge, content, callToAction, tipText, clientOrigin }) {
+  const origin = clientOrigin || getClientOrigin();
+  const logoUrl = `${origin}/logo.png`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -82,7 +106,7 @@ function emailShell({ title, badge, content, callToAction, tipText }) {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="left" style="vertical-align: middle;">
-                    <a href="${CLIENT_ORIGIN}" target="_blank" style="text-decoration: none; display: inline-block;">
+                    <a href="${origin}" target="_blank" style="text-decoration: none; display: inline-block;">
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td style="vertical-align: middle; padding-right: 12px;">
@@ -172,9 +196,9 @@ function emailShell({ title, badge, content, callToAction, tipText }) {
                 Kathmandu · 27.7172° N, 85.3240° E · Asia/Kathmandu
               </p>
               <p style="margin: 0; font-size: 11px; color: #9c9487;">
-                <a href="${CLIENT_ORIGIN}" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Visit Web App</a> ·
-                <a href="${CLIENT_ORIGIN}/explore" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Explore Destinations</a> ·
-                <a href="${CLIENT_ORIGIN}/plan" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Plan Trip</a>
+                <a href="${origin}" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Visit Web App</a> ·
+                <a href="${origin}/explore" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Explore Destinations</a> ·
+                <a href="${origin}/plan" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Plan Trip</a>
               </p>
             </td>
           </tr>
@@ -190,7 +214,8 @@ function emailShell({ title, badge, content, callToAction, tipText }) {
 }
 
 /** 1. Welcome Email on Registration */
-export async function sendWelcomeEmail({ to, name }) {
+export async function sendWelcomeEmail({ to, name, req }) {
+  const origin = getClientOrigin(req);
   const firstName = name ? name.split(' ')[0] : 'Traveller';
   const title = `Namaste ${firstName}, welcome to Ghumfir! 🙏`;
   
@@ -217,9 +242,10 @@ export async function sendWelcomeEmail({ to, name }) {
     title,
     badge: 'Welcome',
     content,
+    clientOrigin: origin,
     callToAction: {
       text: 'Start Exploring Nepal →',
-      url: `${CLIENT_ORIGIN}/explore`,
+      url: `${origin}/explore`,
     },
     tipText: 'Tip: Add destinations to your wishlist or plan your custom loop from Kathmandu, Pokhara, Butwal, or Dharan.',
   });
@@ -228,15 +254,16 @@ export async function sendWelcomeEmail({ to, name }) {
     from: FROM,
     to,
     subject: `Welcome to Ghumfir (घुमफिर) · Start Planning Nepal`,
-    text: `Namaste ${name}! Welcome to Ghumfir. Start planning your Nepal journey at ${CLIENT_ORIGIN}/explore`,
+    text: `Namaste ${name}! Welcome to Ghumfir. Start planning your Nepal journey at ${origin}/explore`,
     html,
   });
 }
 
 /** 2. Email Verification */
-export async function sendVerificationEmail({ to, name, token }) {
+export async function sendVerificationEmail({ to, name, token, req }) {
+  const origin = getClientOrigin(req);
   const firstName = name ? name.split(' ')[0] : 'Traveller';
-  const verifyUrl = `${CLIENT_ORIGIN}/verify-email?token=${token}`;
+  const verifyUrl = `${origin}/verify-email?token=${token}`;
   const title = `Verify your email address`;
 
   const content = `
@@ -248,6 +275,7 @@ export async function sendVerificationEmail({ to, name, token }) {
     title,
     badge: 'Account Activation',
     content,
+    clientOrigin: origin,
     callToAction: {
       text: 'Verify My Email Address →',
       url: verifyUrl,
@@ -265,9 +293,10 @@ export async function sendVerificationEmail({ to, name, token }) {
 }
 
 /** 3. Password Reset Email */
-export async function sendPasswordResetEmail({ to, name, token }) {
+export async function sendPasswordResetEmail({ to, name, token, req }) {
+  const origin = getClientOrigin(req);
   const firstName = name ? name.split(' ')[0] : 'Traveller';
-  const resetUrl = `${CLIENT_ORIGIN}/reset-password?token=${token}`;
+  const resetUrl = `${origin}/reset-password?token=${token}`;
   const title = `Reset your Ghumfir password`;
 
   const content = `
@@ -279,6 +308,7 @@ export async function sendPasswordResetEmail({ to, name, token }) {
     title,
     badge: 'Password Reset',
     content,
+    clientOrigin: origin,
     callToAction: {
       text: 'Choose New Password →',
       url: resetUrl,
@@ -296,8 +326,9 @@ export async function sendPasswordResetEmail({ to, name, token }) {
 }
 
 /** 4. Trip Details Email */
-export async function sendTripItineraryEmail({ to, name, trip, recipientEmail, senderName }) {
-  const tripUrl = `${CLIENT_ORIGIN}/t/${trip.share_code || trip.id}`;
+export async function sendTripItineraryEmail({ to, name, trip, recipientEmail, senderName, req }) {
+  const origin = getClientOrigin(req);
+  const tripUrl = `${origin}/t/${trip.share_code || trip.id}`;
   const title = trip.title || 'Your Nepal Journey Itinerary';
   const senderText = senderName
     ? `<strong>${senderName}</strong> has shared a personalized Nepal itinerary with you on Ghumfir:`
@@ -365,6 +396,7 @@ export async function sendTripItineraryEmail({ to, name, trip, recipientEmail, s
     title,
     badge: 'Nepal Itinerary',
     content,
+    clientOrigin: origin,
     callToAction: {
       text: 'View Full Itinerary Online →',
       url: tripUrl,

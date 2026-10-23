@@ -14,7 +14,7 @@ const DB = process.env.DB_NAME || 'ghumfir';
 if (!/^[A-Za-z0-9_]+$/.test(DB)) throw new Error('DB_NAME may only contain letters, digits and _');
 
 const sslOption = process.env.DB_SSL === 'true' || process.env.DATABASE_URL?.includes('ssl')
-  ? { rejectUnauthorized: false }
+  ? { minVersion: 'TLSv1.2', rejectUnauthorized: true }
   : undefined;
 
 const conn = process.env.DATABASE_URL
@@ -28,18 +28,19 @@ const conn = process.env.DATABASE_URL
       port: Number(process.env.DB_PORT || 3306),
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || undefined,
       ssl: sslOption,
       multipleStatements: true,
     });
 
-if (process.env.DATABASE_URL) {
-  console.log('Initializing cloud database tables...');
-  await conn.query(await fs.readFile(path.join(here, 'schema.sql'), 'utf8'));
-} else {
+console.log('Applying database schema...');
+if (!process.env.DATABASE_URL) {
   console.log(`Recreating database "${DB}"...`);
   await conn.query(`DROP DATABASE IF EXISTS \`${DB}\`; CREATE DATABASE \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; USE \`${DB}\`;`);
-  await conn.query(await fs.readFile(path.join(here, 'schema.sql'), 'utf8'));
+} else {
+  await conn.query(`CREATE DATABASE IF NOT EXISTS \`${DB}\`; USE \`${DB}\`;`);
 }
+await conn.query(await fs.readFile(path.join(here, 'schema.sql'), 'utf8'));
 
 const rows = seedRows();
 const insertMany = async (table, objs, cols) => {

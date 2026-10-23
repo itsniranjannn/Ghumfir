@@ -2,7 +2,7 @@ import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
 const sslOption = process.env.DB_SSL === 'true' || process.env.DATABASE_URL?.includes('ssl')
-  ? { rejectUnauthorized: false }
+  ? { minVersion: 'TLSv1.2', rejectUnauthorized: true }
   : undefined;
 
 export const pool = process.env.DATABASE_URL

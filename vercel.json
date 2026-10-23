@@ -6,7 +6,8 @@
       "framework": "vite"
     },
     "server": {
-      "root": "server"
+      "root": "server",
+      "entrypoint": "src/index.js"
     }
   },
   "rewrites": [

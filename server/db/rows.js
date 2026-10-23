@@ -2,9 +2,9 @@
 import { destinations, attractions, hotels, roadLinks, permits, weatherRisk } from './seed-data.js';
 import { images, hotelImages } from './seed-images.js';
 
-const MOUNTAIN = ['namche', 'gosaikunda', 'rara', 'upper-mustang', 'ghandruk'];
-const JUNGLE = ['chitwan', 'bardiya'];
-const VIEW = ['pokhara', 'nagarkot', 'dhulikhel', 'bandipur', 'ilam'];
+const MOUNTAIN = ['namche', 'gosaikunda', 'rara', 'upper-mustang', 'ghandruk', 'kalinchowk', 'manang', 'muktinath'];
+const JUNGLE = ['chitwan', 'bardiya', 'shuklaphanta'];
+const VIEW = ['pokhara', 'nagarkot', 'dhulikhel', 'bandipur', 'ilam', 'dharan'];
 
 /** Picks a fitting sample photo for a hotel by place type and tier, rotating through each kind. */
 function hotelImage(slug, tier, used) {

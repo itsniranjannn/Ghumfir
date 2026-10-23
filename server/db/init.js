@@ -39,6 +39,12 @@ if (!process.env.DATABASE_URL) {
   await conn.query(`DROP DATABASE IF EXISTS \`${DB}\`; CREATE DATABASE \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; USE \`${DB}\`;`);
 } else {
   await conn.query(`CREATE DATABASE IF NOT EXISTS \`${DB}\`; USE \`${DB}\`;`);
+  // Drop tables in reverse FK order if they exist so schema.sql can cleanly recreate
+  await conn.query(`
+    SET FOREIGN_KEY_CHECKS = 0;
+    DROP TABLE IF EXISTS trip_destinations, trips, wishlist, reviews, hotels, attractions, road_links, users, destinations;
+    SET FOREIGN_KEY_CHECKS = 1;
+  `);
 }
 await conn.query(await fs.readFile(path.join(here, 'schema.sql'), 'utf8'));
 
@@ -83,7 +89,13 @@ for (const [name, email, pass, role, home, interests] of people) {
 // ---- reviews (deterministic pseudo-random so the demo is repeatable) ----
 let seed = 42;
 const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
-const base = { kathmandu: 4.4, bhaktapur: 4.7, pokhara: 4.7, chitwan: 4.6, lumbini: 4.5, bandipur: 4.6, nagarkot: 4.2, 'upper-mustang': 4.8, ilam: 4.4, janakpur: 4.2, gorkha: 4.1, rara: 4.9, namche: 4.8, ghandruk: 4.6, tansen: 4.2, dhulikhel: 4.3, bardiya: 4.5, gosaikunda: 4.7 };
+const base = {
+  kathmandu: 4.4, bhaktapur: 4.7, pokhara: 4.7, chitwan: 4.6, lumbini: 4.5, bandipur: 4.6,
+  nagarkot: 4.2, 'upper-mustang': 4.8, ilam: 4.4, janakpur: 4.2, gorkha: 4.1, rara: 4.9,
+  namche: 4.8, ghandruk: 4.6, tansen: 4.2, dhulikhel: 4.3, bardiya: 4.5, gosaikunda: 4.7,
+  biratnagar: 4.3, dharan: 4.5, nepalgunj: 4.2, butwal: 4.3, kalinchowk: 4.7, shuklaphanta: 4.6,
+  manang: 4.8, muktinath: 4.7,
+};
 const comments = ['Worth every rupee.', 'Go early to avoid the crowds.', 'The views were unreal.', 'Roads were rough but it was worth it.', 'Loved the food here.', 'Would stay an extra day next time.', 'Peaceful and friendly people.', 'Book the hotel in advance during festivals.'];
 const reviewRows = [];
 for (let u = 3; u <= people.length; u++) {

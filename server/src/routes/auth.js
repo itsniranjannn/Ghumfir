@@ -42,9 +42,15 @@ r.post('/register', ah(async (req, res) => {
   );
   const [user] = await query('SELECT * FROM users WHERE id = ?', [result.insertId]);
 
-  // Send branded welcome and verification emails (non-blocking)
-  sendWelcomeEmail({ to: user.email, name: user.name }).catch((err) => console.error('[email:welcome]', err.message));
-  sendVerificationEmail({ to: user.email, name: user.name, token: verifyToken }).catch((err) => console.error('[email:verify]', err.message));
+  // Send branded welcome and verification emails
+  try {
+    await Promise.all([
+      sendWelcomeEmail({ to: user.email, name: user.name }),
+      sendVerificationEmail({ to: user.email, name: user.name, token: verifyToken }),
+    ]);
+  } catch (err) {
+    console.error('[email:register:error]', err.message);
+  }
 
   res.status(201).json({
     ok: true,
@@ -162,7 +168,11 @@ r.post('/forgot-password', ah(async (req, res) => {
   if (user && user.is_active) {
     const resetToken = crypto.randomBytes(32).toString('hex');
     await query('UPDATE users SET reset_token = ?, reset_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = ?', [resetToken, user.id]);
-    sendPasswordResetEmail({ to: user.email, name: user.name, token: resetToken }).catch((err) => console.error('[email:reset]', err.message));
+    try {
+      await sendPasswordResetEmail({ to: user.email, name: user.name, token: resetToken });
+    } catch (err) {
+      console.error('[email:reset:error]', err.message);
+    }
   }
   res.json({ ok: true, message: 'If an account exists with that email, we have sent password reset instructions.' });
 }));

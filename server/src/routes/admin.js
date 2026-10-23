@@ -42,7 +42,7 @@ r.get('/stats', ah(async (_req, res) => {
     query(`SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS trips FROM trips
             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) GROUP BY month ORDER BY month`),
     query(`SELECT d.name, COUNT(*) AS visits FROM trip_destinations td JOIN destinations d ON d.id = td.destination_id
-            GROUP BY d.id ORDER BY visits DESC LIMIT 8`),
+            GROUP BY d.id, d.name ORDER BY visits DESC LIMIT 8`),
     query('SELECT style, COUNT(*) AS n FROM trips GROUP BY style'),
     query(`SELECT CASE WHEN budget < 30000 THEN 'Under 30k' WHEN budget < 75000 THEN '30k-75k'
                        WHEN budget < 150000 THEN '75k-150k' ELSE '150k+' END AS band, COUNT(*) AS n

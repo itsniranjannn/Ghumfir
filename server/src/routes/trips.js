@@ -29,7 +29,7 @@ const LIST_SQL = `
     LEFT JOIN destinations d ON d.id = td.destination_id`;
 
 r.get('/', requireAuth, ah(async (req, res) => {
-  const rows = await query(`${LIST_SQL} WHERE t.user_id = ? GROUP BY t.id ORDER BY t.created_at DESC`, [req.user.id]);
+  const rows = await query(`${LIST_SQL} WHERE t.user_id = ? GROUP BY t.id, s.name ORDER BY t.created_at DESC`, [req.user.id]);
   res.json({ trips: rows.map(summaryRow) });
 }));
 

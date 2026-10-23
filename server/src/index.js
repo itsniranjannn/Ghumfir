@@ -14,7 +14,26 @@ import { getCatalog } from './catalog.js';
 if (!process.env.JWT_SECRET) console.warn('[warn] JWT_SECRET is not set; using an insecure development secret.');
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
+
+const allowedOrigins = process.env.CLIENT_ORIGIN
+  ? process.env.CLIENT_ORIGIN.split(',').map((s) => s.trim())
+  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or same-origin)
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      process.env.NODE_ENV !== 'production'
+    ) {
+      return callback(null, true);
+    }
+    callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '200kb' }));
 // Admin-uploaded photos. nosniff + fixed extensions keep these served strictly as images.
 app.use('/uploads', express.static(fileURLToPath(UPLOAD_DIR), {
@@ -61,4 +80,8 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = Number(process.env.PORT || 5000);
-app.listen(PORT, () => console.log(`Ghumfir API on http://localhost:${PORT}`));
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`Ghumfir API on http://localhost:${PORT}`));
+}
+
+export default app;

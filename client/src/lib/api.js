@@ -1,5 +1,7 @@
 const TOKEN_KEY = 'ghumfir-token';
 
+export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 export const tokenStore = {
   get: () => {
     try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
@@ -25,7 +27,7 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   let res;
   try {
-    res = await fetch(`/api${path}`, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, signal });
+    res = await fetch(`${API_BASE}/api${path}`, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, signal });
   } catch (e) {
     if (e.name === 'AbortError') throw e;
     throw new ApiError('Cannot reach the Ghumfir server. Is it running?', 0);
@@ -38,7 +40,7 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
 /** Admin: upload an image file as the raw request body; returns { url }. */
 export async function uploadImage(file) {
   if (file.size > 6 * 1024 * 1024) throw new ApiError('Image is larger than 6 MB', 413);
-  const res = await fetch('/api/admin/uploads', {
+  const res = await fetch(`${API_BASE}/api/admin/uploads`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${tokenStore.get()}`, 'Content-Type': file.type || 'application/octet-stream' },
     body: file,

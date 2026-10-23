@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, tokenStore } from './api.js';
+import { api, tokenStore, API_BASE } from './api.js';
 
 const AuthCtx = createContext(null);
 
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
   }, []);
   const uploadAvatar = useCallback(async (file) => {
     if (file.size > 6 * 1024 * 1024) throw new Error('Image is larger than 6 MB');
-    const res = await fetch('/api/auth/avatar', {
+    const res = await fetch(`${API_BASE}/api/auth/avatar`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${tokenStore.get()}`,

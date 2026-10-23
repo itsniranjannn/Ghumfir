@@ -13,17 +13,33 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const DB = process.env.DB_NAME || 'ghumfir';
 if (!/^[A-Za-z0-9_]+$/.test(DB)) throw new Error('DB_NAME may only contain letters, digits and _');
 
-const conn = await mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  multipleStatements: true,
-});
+const sslOption = process.env.DB_SSL === 'true' || process.env.DATABASE_URL?.includes('ssl')
+  ? { rejectUnauthorized: false }
+  : undefined;
 
-console.log(`Recreating database "${DB}"...`);
-await conn.query(`DROP DATABASE IF EXISTS \`${DB}\`; CREATE DATABASE \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; USE \`${DB}\`;`);
-await conn.query(await fs.readFile(path.join(here, 'schema.sql'), 'utf8'));
+const conn = process.env.DATABASE_URL
+  ? await mysql.createConnection({
+      uri: process.env.DATABASE_URL,
+      ssl: sslOption,
+      multipleStatements: true,
+    })
+  : await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      port: Number(process.env.DB_PORT || 3306),
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      ssl: sslOption,
+      multipleStatements: true,
+    });
+
+if (process.env.DATABASE_URL) {
+  console.log('Initializing cloud database tables...');
+  await conn.query(await fs.readFile(path.join(here, 'schema.sql'), 'utf8'));
+} else {
+  console.log(`Recreating database "${DB}"...`);
+  await conn.query(`DROP DATABASE IF EXISTS \`${DB}\`; CREATE DATABASE \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; USE \`${DB}\`;`);
+  await conn.query(await fs.readFile(path.join(here, 'schema.sql'), 'utf8'));
+}
 
 const rows = seedRows();
 const insertMany = async (table, objs, cols) => {

@@ -2,7 +2,14 @@ import nodemailer from 'nodemailer';
 import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173'));
+const CLIENT_ORIGIN =
+  process.env.CLIENT_ORIGIN ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'https://ghumfir-nine.vercel.app');
+
 const FROM = process.env.SMTP_FROM || process.env.EMAIL_FROM || '"Ghumfir (घुमफिर)" <noreply@ghumfir.com>';
 const LOGO_PATH = fileURLToPath(new URL('../assets/logo.png', import.meta.url));
 
@@ -21,7 +28,6 @@ function getTransporter() {
       auth: { user, pass },
     });
   } else {
-    // Development / fallback logger when SMTP credentials are not yet entered
     transporter = {
       sendMail: async (opts) => {
         console.log('\n================== [DEV EMAIL PREVIEW] ==================');
@@ -37,184 +43,185 @@ function getTransporter() {
   return transporter;
 }
 
-/** Base responsive HTML email shell matching Ghumfir system design */
-function emailShell({ title, subtitle, content, callToAction }) {
+/**
+ * Base responsive HTML email template matching Ghumfir system UI:
+ * Warm Himalayan paper palette (#F4EFE6), Terra cotta brand accent (#B4472C),
+ * Clean typography, embossed elevation cards, and authentic Ghumfir logo branding.
+ */
+function emailShell({ title, badge, content, callToAction, tipText }) {
+  const logoUrl = `${CLIENT_ORIGIN}/logo.png`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      background-color: #f4efe6;
-      font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #1e1c18;
-      -webkit-font-smoothing: antialiased;
-    }
-    .wrapper {
-      width: 100%;
-      background-color: #f4efe6;
-      padding: 40px 16px;
-      box-sizing: border-box;
-    }
-    .card {
-      max-width: 580px;
-      margin: 0 auto;
-      background: #fbf8f2;
-      border: 1px solid #d9d0bf;
-      border-radius: 18px;
-      box-shadow: 0 4px 20px rgba(30, 28, 24, 0.06);
-      overflow: hidden;
-    }
-    .header {
-      background: #fbf8f2;
-      padding: 28px 36px 20px;
-      border-bottom: 1px solid #ebe4d6;
-      text-align: left;
-    }
-    .brand-table {
-      border-collapse: collapse;
-    }
-    .brand-name {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 22px;
-      font-weight: 800;
-      color: #1e1c18;
-      letter-spacing: -0.5px;
-      line-height: 1;
-    }
-    .brand-np {
-      font-size: 15px;
-      color: #7a7468;
-      margin-left: 6px;
-      font-weight: normal;
-      line-height: 1;
-    }
-    .body-content {
-      padding: 32px 36px;
-      line-height: 1.65;
-      font-size: 15px;
-      color: #4a463e;
-    }
-    h1 {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 23px;
-      font-weight: 800;
-      color: #1e1c18;
-      margin: 0 0 6px;
-      letter-spacing: -0.4px;
-    }
-    .subtitle {
-      font-size: 14px;
-      color: #7a7468;
-      margin: 0 0 22px;
-      font-weight: 500;
-    }
-    .btn {
-      display: inline-block;
-      background-color: #b4472c;
-      color: #ffffff !important;
-      text-decoration: none;
-      padding: 14px 30px;
-      border-radius: 999px;
-      font-weight: 600;
-      font-size: 15px;
-      margin: 24px 0 16px;
-      box-shadow: 0 4px 14px rgba(180, 71, 44, 0.28);
-      letter-spacing: 0.01em;
-    }
-    .info-box {
-      background: #f4efe6;
-      border: 1px solid #d9d0bf;
-      border-left: 4px solid #b4472c;
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin: 22px 0;
-      font-size: 14px;
-      color: #4a463e;
-    }
-    .footer {
-      padding: 24px 36px 28px;
-      background: #f4efe6;
-      border-top: 1px solid #ebe4d6;
-      font-size: 12px;
-      color: #7a7468;
-      line-height: 1.6;
-      text-align: center;
-    }
-    .footer a {
-      color: #b4472c;
-      text-decoration: none;
-      font-weight: 600;
-    }
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, a { font-family: Arial, sans-serif !important; }
   </style>
+  <![endif]-->
 </head>
-<body>
-  <div class="wrapper">
-    <div class="card">
-      <div class="header">
-        <table cellpadding="0" cellspacing="0" border="0" class="brand-table">
+<body style="margin: 0; padding: 0; background-color: #f2ece1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e1c18; width: 100% !important;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f2ece1; padding: 36px 12px 48px; width: 100%;">
+    <tr>
+      <td align="center" style="vertical-align: top;">
+        
+        <!-- Main Card Wrapper -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 580px; width: 100%; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #dfd6c5; box-shadow: 0 10px 30px rgba(45, 35, 20, 0.07);">
+          
+          <!-- Top Warm Brand Accent Bar -->
           <tr>
-            <td style="vertical-align: middle; padding-right: 12px; width: 38px;">
-              <img src="cid:ghumfir-logo" width="38" height="38" style="display: block; border-radius: 9px; width: 38px; height: 38px;" alt="Ghumfir Logo" />
-            </td>
-            <td style="vertical-align: middle;">
-              <span class="brand-name">Ghumfir</span>
-              <span class="brand-np">घुमफिर</span>
+            <td style="background-color: #b4472c; height: 6px; font-size: 1px; line-height: 1px;">&nbsp;</td>
+          </tr>
+
+          <!-- Header / Brand Bar -->
+          <tr>
+            <td style="padding: 28px 36px 20px; border-bottom: 1px solid #f0e8da; background-color: #faf7f2;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="left" style="vertical-align: middle;">
+                    <a href="${CLIENT_ORIGIN}" target="_blank" style="text-decoration: none; display: inline-block;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td style="vertical-align: middle; padding-right: 12px;">
+                            <img src="${logoUrl}" alt="Ghumfir" width="40" height="40" style="display: block; width: 40px; height: 40px; border-radius: 11px; border: 0; outline: none;" />
+                          </td>
+                          <td style="vertical-align: middle;">
+                            <span style="font-size: 22px; font-weight: 800; color: #1e1c18; letter-spacing: -0.4px; line-height: 1; display: inline-block;">Ghumfir</span>
+                            <span style="font-size: 15px; font-weight: 500; color: #8a8275; margin-left: 6px; line-height: 1; display: inline-block;">घुमफिर</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </a>
+                  </td>
+                  <td align="right" style="vertical-align: middle;">
+                    <span style="display: inline-block; padding: 5px 12px; background-color: #ede5d5; color: #6b6354; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; border-radius: 999px;">
+                      ${badge || 'Nepal Trips'}
+                    </span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
+
+          <!-- Main Email Content Area -->
+          <tr>
+            <td style="padding: 36px 36px 28px; background-color: #ffffff;">
+              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 800; color: #1e1c18; letter-spacing: -0.5px; line-height: 1.25;">
+                ${title}
+              </h1>
+
+              <div style="font-size: 15px; line-height: 1.65; color: #423d33;">
+                ${content}
+              </div>
+
+              <!-- Call to Action Button -->
+              ${
+                callToAction
+                  ? `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${callToAction.url}" target="_blank" style="display: inline-block; background-color: #b4472c; color: #ffffff !important; text-decoration: none; padding: 15px 36px; border-radius: 999px; font-weight: 700; font-size: 15px; letter-spacing: 0.01em; box-shadow: 0 4px 16px rgba(180, 71, 44, 0.32);">
+                      ${callToAction.text}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 16px; font-size: 12px; color: #8a8275; text-align: center; word-break: break-all;">
+                Or copy and paste this link into your browser:<br/>
+                <a href="${callToAction.url}" target="_blank" style="color: #b4472c; text-decoration: underline;">${callToAction.url}</a>
+              </p>
+              `
+                  : ''
+              }
+
+              <!-- Subtle Info / Notice Box -->
+              ${
+                tipText
+                  ? `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 24px; background-color: #faf7f2; border-left: 3px solid #b4472c; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 14px 18px; font-size: 13px; color: #61594d; line-height: 1.55;">
+                    ${tipText}
+                  </td>
+                </tr>
+              </table>
+              `
+                  : ''
+              }
+            </td>
+          </tr>
+
+          <!-- Elevation Contour Divider Visual -->
+          <tr>
+            <td style="padding: 0 36px; background-color: #ffffff;">
+              <hr style="border: 0; border-top: 1px dashed #e8dfcf; margin: 0;" />
+            </td>
+          </tr>
+
+          <!-- Footer Area -->
+          <tr>
+            <td style="padding: 24px 36px 30px; background-color: #faf7f2; text-align: center;">
+              <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #524b3f;">
+                Ghumfir · Nepal travel planner with real road hours &amp; dynamic budgets.
+              </p>
+              <p style="margin: 0 0 12px; font-size: 11px; color: #8a8275;">
+                Kathmandu · 27.7172° N, 85.3240° E · Asia/Kathmandu
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #9c9487;">
+                <a href="${CLIENT_ORIGIN}" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Visit Web App</a> ·
+                <a href="${CLIENT_ORIGIN}/explore" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Explore Destinations</a> ·
+                <a href="${CLIENT_ORIGIN}/plan" target="_blank" style="color: #b4472c; text-decoration: none; font-weight: 600;">Plan Trip</a>
+              </p>
+            </td>
+          </tr>
+
         </table>
-      </div>
-      <div class="body-content">
-        <h1>${title}</h1>
-        ${subtitle ? `<p class="subtitle">${subtitle}</p>` : ''}
-        ${content}
-        ${callToAction ? `<div style="text-align: center;"><a href="${callToAction.url}" class="btn">${callToAction.text}</a></div>` : ''}
-      </div>
-      <div class="footer">
-        <p style="margin: 0 0 4px;">Ghumfir · Nepal Travel Planner with real road times & dynamic budgets.</p>
-        <p style="margin: 0;">Kathmandu, Nepal · <a href="${CLIENT_ORIGIN}">Visit Ghumfir</a></p>
-      </div>
-    </div>
-  </div>
+        <!-- /Main Card Wrapper -->
+
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
 
-const logoAttachment = {
-  filename: 'ghumfir-logo.png',
-  path: LOGO_PATH,
-  cid: 'ghumfir-logo',
-};
-
 /** 1. Welcome Email on Registration */
 export async function sendWelcomeEmail({ to, name }) {
-  const title = `Welcome to Ghumfir, ${name || 'traveller'}!`;
+  const firstName = name ? name.split(' ')[0] : 'Traveller';
+  const title = `Namaste ${firstName}, welcome to Ghumfir! 🙏`;
+  
   const content = `
-    <p>Namaste 🙏 We’re thrilled to have you with us on Ghumfir.</p>
-    <p>Ghumfir helps you plan authentic trips across Nepal built around real road hours, real fuel and food prices, and dynamic optimization algorithms.</p>
-    <div class="info-box">
-      <strong style="color: #1e1c18;">Here is what you can do on Ghumfir:</strong>
-      <ul style="margin: 8px 0 0; padding-left: 20px;">
-        <li><strong>Explore Destinations:</strong> Discover high-altitude treks, sacred temples, and tranquil lakes.</li>
-        <li><strong>Auto-Plan Itineraries:</strong> Build day-by-day routes tailored to your budget and interests.</li>
-        <li><strong>Wishlist & Reviews:</strong> Save destinations and share travel tips with fellow travellers.</li>
-      </ul>
-    </div>
-    <p>Ready to plan your next journey?</p>
+    <p style="margin: 0 0 16px;">We’re thrilled to have you with us on Ghumfir, Nepal's authentic travel planner.</p>
+    <p style="margin: 0 0 16px;">Ghumfir helps you discover and map true itineraries across Nepal built around real mountain road conditions, accurate bus and jeep hours, fuel costs, and dynamic budget optimization.</p>
+    
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0; background-color: #faf7f2; border: 1px solid #e8dfcf; border-radius: 12px; overflow: hidden;">
+      <tr>
+        <td style="padding: 16px 20px;">
+          <strong style="color: #1e1c18; font-size: 14px; display: block; margin-bottom: 8px;">What you can do right now:</strong>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13.5px; color: #524b3f; line-height: 1.6;">
+            <li><strong>Discover 26+ Destinations:</strong> From Pokhara lakes to Rara, Manang, and Everest foothill treks.</li>
+            <li><strong>Auto-Plan Dynamic Routes:</strong> Choose your starting city and let the TSP solver find the shortest loop.</li>
+            <li><strong>Budget Transparently:</strong> See lodging, permits, food, and local transit calculated before you pack.</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+    <p style="margin: 0;">Ready to start building your upcoming Himalayan adventure?</p>
   `;
 
   const html = emailShell({
     title,
-    subtitle: 'Your Nepal journey starts here',
+    badge: 'Welcome',
     content,
     callToAction: {
-      text: 'Start Planning Your Trip →',
+      text: 'Start Exploring Nepal →',
       url: `${CLIENT_ORIGIN}/explore`,
     },
+    tipText: 'Tip: Add destinations to your wishlist or plan your custom loop from Kathmandu, Pokhara, Butwal, or Dharan.',
   });
 
   return getTransporter().sendMail({
@@ -223,30 +230,29 @@ export async function sendWelcomeEmail({ to, name }) {
     subject: `Welcome to Ghumfir (घुमफिर) · Start Planning Nepal`,
     text: `Namaste ${name}! Welcome to Ghumfir. Start planning your Nepal journey at ${CLIENT_ORIGIN}/explore`,
     html,
-    attachments: [logoAttachment],
   });
 }
 
 /** 2. Email Verification */
 export async function sendVerificationEmail({ to, name, token }) {
+  const firstName = name ? name.split(' ')[0] : 'Traveller';
   const verifyUrl = `${CLIENT_ORIGIN}/verify-email?token=${token}`;
-  const title = 'Verify your email address';
+  const title = `Verify your email address`;
+
   const content = `
-    <p>Namaste ${name || ''},</p>
-    <p>Thank you for signing up for Ghumfir. Please confirm your email address by clicking the button below to secure your account and activate login:</p>
-    <div class="info-box">
-      <p style="margin: 0; color: #4a463e;">This verification link will expire in <strong>24 hours</strong>. If you didn't create an account on Ghumfir, you can safely ignore this email.</p>
-    </div>
+    <p style="margin: 0 0 16px;">Namaste <strong>${firstName}</strong>,</p>
+    <p style="margin: 0 0 16px;">Thank you for registering on <strong>Ghumfir</strong>. To activate your account and log in to plan and save your trips, please verify your email address by clicking the button below:</p>
   `;
 
   const html = emailShell({
     title,
-    subtitle: 'Complete your registration',
+    badge: 'Account Activation',
     content,
     callToAction: {
-      text: 'Verify My Email',
+      text: 'Verify My Email Address →',
       url: verifyUrl,
     },
+    tipText: 'For your security, this verification link will expire in <strong>24 hours</strong>. If you did not create this account, you can safely disregard this email.',
   });
 
   return getTransporter().sendMail({
@@ -255,31 +261,29 @@ export async function sendVerificationEmail({ to, name, token }) {
     subject: `Verify your Ghumfir account email`,
     text: `Namaste ${name}! Please verify your email by opening: ${verifyUrl}`,
     html,
-    attachments: [logoAttachment],
   });
 }
 
 /** 3. Password Reset Email */
 export async function sendPasswordResetEmail({ to, name, token }) {
+  const firstName = name ? name.split(' ')[0] : 'Traveller';
   const resetUrl = `${CLIENT_ORIGIN}/reset-password?token=${token}`;
-  const title = 'Reset your Ghumfir password';
+  const title = `Reset your Ghumfir password`;
+
   const content = `
-    <p>Namaste ${name || ''},</p>
-    <p>We received a request to reset your Ghumfir account password. Click the button below to choose a new password:</p>
-    <div class="info-box">
-      <p style="margin: 0; color: #4a463e;">This link will expire in <strong>1 hour</strong>. For security, never share this link with anyone.</p>
-    </div>
-    <p>If you didn't request a password reset, you can safely ignore this message; your password will stay unchanged.</p>
+    <p style="margin: 0 0 16px;">Namaste <strong>${firstName}</strong>,</p>
+    <p style="margin: 0 0 16px;">We received a request to reset the password for your Ghumfir account. Click the button below to choose a secure new password:</p>
   `;
 
   const html = emailShell({
     title,
-    subtitle: 'Account security',
+    badge: 'Password Reset',
     content,
     callToAction: {
-      text: 'Reset My Password',
+      text: 'Choose New Password →',
       url: resetUrl,
     },
+    tipText: 'This password reset link is valid for <strong>1 hour</strong>. If you did not request a password reset, your credentials remain safe and you can ignore this email.',
   });
 
   return getTransporter().sendMail({
@@ -288,7 +292,6 @@ export async function sendPasswordResetEmail({ to, name, token }) {
     subject: `Reset your Ghumfir password`,
     text: `Reset your Ghumfir password here: ${resetUrl} (expires in 1 hour)`,
     html,
-    attachments: [logoAttachment],
   });
 }
 
@@ -296,60 +299,77 @@ export async function sendPasswordResetEmail({ to, name, token }) {
 export async function sendTripItineraryEmail({ to, name, trip, recipientEmail, senderName }) {
   const tripUrl = `${CLIENT_ORIGIN}/t/${trip.share_code || trip.id}`;
   const title = trip.title || 'Your Nepal Journey Itinerary';
-  const senderText = senderName ? `${senderName} has shared a Nepal itinerary with you on Ghumfir:` : 'Here are your complete trip details from Ghumfir:';
+  const senderText = senderName
+    ? `<strong>${senderName}</strong> has shared a personalized Nepal itinerary with you on Ghumfir:`
+    : 'Here are the details for your upcoming Nepal journey:';
 
   let stopsHtml = '';
   if (Array.isArray(trip.destinations) && trip.destinations.length > 0) {
     stopsHtml = `
       <div style="margin: 22px 0;">
-        <strong style="display: block; margin-bottom: 10px; color: #1e1c18;">Destinations in this itinerary:</strong>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
+        <strong style="display: block; margin-bottom: 10px; color: #1e1c18; font-size: 14px;">Destinations along this loop:</strong>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
           ${trip.destinations
             .map(
               (d, i) => `
-              <div style="padding: 12px 16px; background: #f4efe6; border: 1px solid #d9d0bf; border-radius: 8px; margin-bottom: 8px;">
-                <strong style="color: #1e1c18;">${i + 1}. ${d.name}</strong> ${d.name_np ? `<span style="color:#7a7468;">(${d.name_np})</span>` : ''}
-                ${d.tagline ? `<div style="font-size: 13px; color: #4a463e; margin-top: 3px;">${d.tagline}</div>` : ''}
-              </div>`
+              <tr>
+                <td style="padding: 10px 14px; background-color: #faf7f2; border: 1px solid #e8dfcf; border-radius: 8px; margin-bottom: 6px;">
+                  <span style="display: inline-block; width: 22px; height: 22px; line-height: 22px; background-color: #b4472c; color: #ffffff; text-align: center; border-radius: 50%; font-size: 11px; font-weight: 700; margin-right: 8px;">${i + 1}</span>
+                  <strong style="color: #1e1c18;">${d.name}</strong> ${d.name_np ? `<span style="color:#8a8275; font-size: 13px;">(${d.name_np})</span>` : ''}
+                  ${d.tagline ? `<div style="font-size: 12px; color: #61594d; margin-top: 3px; padding-left: 30px;">${d.tagline}</div>` : ''}
+                </td>
+              </tr>
+              <tr><td style="height: 6px; font-size: 1px;">&nbsp;</td></tr>`
             )
             .join('')}
-        </div>
+        </table>
       </div>
     `;
   }
 
   const content = `
-    <p>Namaste,</p>
-    <p>${senderText}</p>
-    <div class="info-box">
-      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-        <tr>
-          <td style="padding: 6px 0; color: #7a7468;">Duration:</td>
-          <td style="padding: 6px 0; font-weight: 700; color: #1e1c18; text-align: right;">${trip.days || '—'} days</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #7a7468;">Travel Style:</td>
-          <td style="padding: 6px 0; font-weight: 700; color: #1e1c18; text-align: right; text-transform: capitalize;">${trip.style || 'Standard'}</td>
-        </tr>
-        ${trip.total_cost ? `
-        <tr>
-          <td style="padding: 6px 0; color: #7a7468;">Estimated Cost:</td>
-          <td style="padding: 6px 0; font-weight: 800; color: #b4472c; text-align: right;">Rs ${Number(trip.total_cost).toLocaleString('en-IN')}</td>
-        </tr>` : ''}
-      </table>
-    </div>
+    <p style="margin: 0 0 16px;">Namaste,</p>
+    <p style="margin: 0 0 18px;">${senderText}</p>
+    
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #faf7f2; border: 1px solid #e8dfcf; border-radius: 12px; margin-bottom: 20px;">
+      <tr>
+        <td style="padding: 16px 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 14px;">
+            <tr>
+              <td style="padding: 5px 0; color: #8a8275;">Duration:</td>
+              <td style="padding: 5px 0; font-weight: 700; color: #1e1c18; text-align: right;">${trip.days || '—'} days</td>
+            </tr>
+            <tr>
+              <td style="padding: 5px 0; color: #8a8275;">Travel Style:</td>
+              <td style="padding: 5px 0; font-weight: 700; color: #1e1c18; text-align: right; text-transform: capitalize;">${trip.style || 'Standard'}</td>
+            </tr>
+            ${
+              trip.total_cost
+                ? `
+            <tr>
+              <td style="padding: 5px 0; color: #8a8275;">Estimated Budget:</td>
+              <td style="padding: 5px 0; font-weight: 800; color: #b4472c; text-align: right;">Rs ${Number(trip.total_cost).toLocaleString('en-IN')}</td>
+            </tr>`
+                : ''
+            }
+          </table>
+        </td>
+      </tr>
+    </table>
+
     ${stopsHtml}
-    <p>View the interactive road map, sightseeing schedule, hotel recommendations and cost breakdowns online:</p>
+    <p style="margin: 0;">Explore the full interactive itinerary, day-by-day sightseeing checklist, and stays online:</p>
   `;
 
   const html = emailShell({
     title,
-    subtitle: 'Nepal Journey Itinerary',
+    badge: 'Nepal Itinerary',
     content,
     callToAction: {
       text: 'View Full Itinerary Online →',
       url: tripUrl,
     },
+    tipText: 'You can export this itinerary to PDF, customize stops, or recalculate costs directly on Ghumfir.',
   });
 
   return getTransporter().sendMail({
@@ -358,6 +378,5 @@ export async function sendTripItineraryEmail({ to, name, trip, recipientEmail, s
     subject: `🇳🇵 Itinerary: ${trip.title} (${trip.days || ''} days)`,
     text: `View your Nepal itinerary "${trip.title}" at: ${tripUrl}`,
     html,
-    attachments: [logoAttachment],
   });
 }

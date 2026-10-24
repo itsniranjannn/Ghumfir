@@ -37,6 +37,13 @@ export function getClientOrigin(req) {
 const FROM = process.env.SMTP_FROM || process.env.EMAIL_FROM || '"Ghumfir (घुमफिर)" <noreply@ghumfir.com>';
 const LOGO_PATH = fileURLToPath(new URL('../assets/logo.png', import.meta.url));
 
+const logoAttachment = {
+  filename: 'ghumfir-logo.png',
+  path: LOGO_PATH,
+  cid: 'ghumfir-logo',
+  contentDisposition: 'inline',
+};
+
 let transporter = null;
 
 function getTransporter() {
@@ -74,7 +81,8 @@ function getTransporter() {
  */
 function emailShell({ title, badge, content, callToAction, tipText, clientOrigin }) {
   const origin = clientOrigin || getClientOrigin();
-  const logoUrl = LOGO_BASE64;
+  // Using cid:ghumfir-logo loads the inline attached system logo in Gmail/Outlook/Apple Mail
+  const logoUrl = 'cid:ghumfir-logo';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -257,6 +265,7 @@ export async function sendWelcomeEmail({ to, name, req }) {
     subject: `Welcome to Ghumfir (घुमफिर) · Start Planning Nepal`,
     text: `Namaste ${name}! Welcome to Ghumfir. Start planning your Nepal journey at ${origin}/explore`,
     html,
+    attachments: [logoAttachment],
   });
 }
 
@@ -312,6 +321,7 @@ export async function sendVerificationEmail({ to, name, token, req }) {
       : `Verify your Ghumfir account email`,
     text: `Namaste ${name}! Your Ghumfir verification code is: ${token}. Or verify directly at: ${verifyUrl}`,
     html,
+    attachments: [logoAttachment],
   });
 }
 
@@ -345,6 +355,7 @@ export async function sendPasswordResetEmail({ to, name, token, req }) {
     subject: `Reset your Ghumfir password`,
     text: `Reset your Ghumfir password here: ${resetUrl} (expires in 1 hour)`,
     html,
+    attachments: [logoAttachment],
   });
 }
 
@@ -433,5 +444,6 @@ export async function sendTripItineraryEmail({ to, name, trip, recipientEmail, s
     subject: `🇳🇵 Itinerary: ${trip.title} (${trip.days || ''} days)`,
     text: `View your Nepal itinerary "${trip.title}" at: ${tripUrl}`,
     html,
+    attachments: [logoAttachment],
   });
 }

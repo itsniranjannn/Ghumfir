@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
+import { LOGO_BASE64 } from './logoBase64.js';
 
 export function getClientOrigin(req) {
   if (req) {
@@ -73,7 +74,7 @@ function getTransporter() {
  */
 function emailShell({ title, badge, content, callToAction, tipText, clientOrigin }) {
   const origin = clientOrigin || getClientOrigin();
-  const logoUrl = `${origin}/logo.png`;
+  const logoUrl = LOGO_BASE64;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -266,9 +267,29 @@ export async function sendVerificationEmail({ to, name, token, req }) {
   const verifyUrl = `${origin}/verify-email?token=${token}`;
   const title = `Verify your email address`;
 
+  const isNumericOtp = /^\d{6}$/.test(String(token).trim());
+
   const content = `
     <p style="margin: 0 0 16px;">Namaste <strong>${firstName}</strong>,</p>
-    <p style="margin: 0 0 16px;">Thank you for registering on <strong>Ghumfir</strong>. To activate your account and log in to plan and save your trips, please verify your email address by clicking the button below:</p>
+    <p style="margin: 0 0 16px;">Thank you for registering on <strong>Ghumfir</strong>. To activate your account and begin planning your trips across Nepal, please enter this verification code:</p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0 20px;">
+      <tr>
+        <td align="center">
+          <div style="display: inline-block; background-color: #faf7f2; border: 2px dashed #b4472c; border-radius: 14px; padding: 16px 32px; text-align: center;">
+            <span style="font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #b4472c; display: block; line-height: 1;">
+              ${token}
+            </span>
+            <span style="display: block; margin-top: 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #8a8275;">
+              6-digit verification code
+            </span>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <p style="margin: 0 0 16px; font-size: 14px; color: #6b6354; text-align: center;">
+      Enter this code on the Ghumfir verification page or click the link below to verify automatically:
+    </p>
   `;
 
   const html = emailShell({
@@ -277,17 +298,19 @@ export async function sendVerificationEmail({ to, name, token, req }) {
     content,
     clientOrigin: origin,
     callToAction: {
-      text: 'Verify My Email Address →',
+      text: 'Verify My Account Directly →',
       url: verifyUrl,
     },
-    tipText: 'For your security, this verification link will expire in <strong>24 hours</strong>. If you did not create this account, you can safely disregard this email.',
+    tipText: 'This verification code is valid for <strong>24 hours</strong>. If you did not create this account on Ghumfir, you can safely disregard this email.',
   });
 
   return getTransporter().sendMail({
     from: FROM,
     to,
-    subject: `Verify your Ghumfir account email`,
-    text: `Namaste ${name}! Please verify your email by opening: ${verifyUrl}`,
+    subject: isNumericOtp
+      ? `${token} is your Ghumfir verification code`
+      : `Verify your Ghumfir account email`,
+    text: `Namaste ${name}! Your Ghumfir verification code is: ${token}. Or verify directly at: ${verifyUrl}`,
     html,
   });
 }

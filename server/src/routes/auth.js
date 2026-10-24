@@ -27,6 +27,10 @@ const publicUser = (u) => ({
   interests: splitList(u.interests), isVerified: !!u.is_verified, createdAt: u.created_at,
 });
 
+function generateOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
 r.post('/register', ah(async (req, res) => {
   const { name, email, password, interests, homeCityId } = req.body || {};
   if (!name || String(name).trim().length < 2) return res.status(400).json({ error: 'Please enter your name' });
@@ -35,7 +39,7 @@ r.post('/register', ah(async (req, res) => {
   const exists = await query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
   if (exists.length) return res.status(409).json({ error: 'An account with this email already exists' });
   
-  const verifyToken = crypto.randomBytes(32).toString('hex');
+  const verifyToken = generateOtp();
   const result = await query(
     'INSERT INTO users (name, email, password_hash, home_city_id, interests, is_verified, verify_token) VALUES (?,?,?,?,?,?,?)',
     [String(name).trim(), email.toLowerCase(), await bcrypt.hash(password, 10), Number(homeCityId) || null, cleanInterests(interests), 0, verifyToken]
@@ -55,7 +59,7 @@ r.post('/register', ah(async (req, res) => {
   res.status(201).json({
     ok: true,
     requiresVerification: true,
-    message: 'Account created! Please check your email to verify your address before logging in.',
+    message: 'Account created! Please enter the 6-digit verification code sent to your email.',
     email: user.email,
   });
 }));
@@ -113,13 +117,26 @@ r.post('/avatar', requireAuth, express.raw({ type: () => true, limit: '6mb' }), 
   res.json({ url, user: publicUser(user) });
 }));
 
-// GET /api/auth/verify?token=...
-r.get('/verify', ah(async (req, res) => {
-  const { token } = req.query;
-  if (!token) return res.status(400).json({ error: 'Missing verification token' });
-  const [user] = await query('SELECT * FROM users WHERE verify_token = ?', [String(token)]);
+// GET or POST /api/auth/verify (supports ?token=... or POST { token, code, email })
+const handleVerify = async (req, res) => {
+  const token = req.query.token || req.body?.code || req.body?.token;
+  const email = req.body?.email;
+  if (!token) return res.status(400).json({ error: 'Missing verification code or token' });
+
+  const cleanToken = String(token).trim();
+  let user = null;
+
+  if (email) {
+    const [u] = await query('SELECT * FROM users WHERE email = ? AND verify_token = ?', [String(email).toLowerCase().trim(), cleanToken]);
+    user = u;
+  }
   if (!user) {
-    return res.status(400).json({ error: 'Verification link is invalid or has expired' });
+    const [u] = await query('SELECT * FROM users WHERE verify_token = ?', [cleanToken]);
+    user = u;
+  }
+
+  if (!user) {
+    return res.status(400).json({ error: 'Verification code is invalid or has expired' });
   }
   if (!user.is_verified) {
     await query('UPDATE users SET is_verified = 1 WHERE id = ?', [user.id]);
@@ -131,7 +148,10 @@ r.get('/verify', ah(async (req, res) => {
     token: signToken(updatedUser),
     user: publicUser(updatedUser),
   });
-}));
+};
+
+r.get('/verify', ah(handleVerify));
+r.post('/verify', ah(handleVerify));
 
 // POST /api/auth/resend-verification
 r.post('/resend-verification', ah(async (req, res) => {
@@ -149,15 +169,15 @@ r.post('/resend-verification', ah(async (req, res) => {
     user = u;
   }
   if (!user) {
-    return res.json({ ok: true, message: 'If an account exists with that email, a verification link has been sent.' });
+    return res.json({ ok: true, message: 'If an account exists with that email, a verification code has been sent.' });
   }
   if (user.is_verified) {
     return res.json({ ok: true, message: 'Your email is already verified. You can log in.' });
   }
-  const verifyToken = crypto.randomBytes(32).toString('hex');
+  const verifyToken = generateOtp();
   await query('UPDATE users SET verify_token = ? WHERE id = ?', [verifyToken, user.id]);
   await sendVerificationEmail({ to: user.email, name: user.name, token: verifyToken, req });
-  res.json({ ok: true, message: 'Verification email sent! Please check your inbox.' });
+  res.json({ ok: true, message: 'Verification code sent! Please check your inbox.' });
 }));
 
 // POST /api/auth/forgot-password

@@ -180,9 +180,14 @@ export function Register() {
   const { register } = useAuth();
   const { meta } = useMeta();
   const toast = useToast();
+  const nav = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', homeCityId: '', interests: [] });
   const [error, setError] = useState('');
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [codeError, setCodeError] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifiedSuccess, setVerifiedSuccess] = useState(false);
   const [resending, setResending] = useState(false);
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e?.target ? e.target.value : e }));
@@ -201,12 +206,41 @@ export function Register() {
     }
   };
 
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    if (!code || code.trim().length !== 6) {
+      setCodeError('Please enter the 6-digit verification code.');
+      return;
+    }
+    setCodeError('');
+    setVerifying(true);
+    try {
+      const res = await api('/auth/verify', {
+        method: 'POST',
+        body: { email: registeredEmail, code: code.trim() },
+      });
+      if (res.token) {
+        tokenStore.set(res.token);
+      }
+      setVerifiedSuccess(true);
+      toast(res.message || 'Email verified successfully! Welcome to Ghumfir.');
+      setTimeout(() => {
+        nav('/explore', { replace: true });
+      }, 1500);
+    } catch (err) {
+      setCodeError(err.message || 'Verification failed. Please check the code.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const resend = async () => {
     if (!registeredEmail) return;
     setResending(true);
+    setCodeError('');
     try {
       const res = await api('/auth/resend-verification', { method: 'POST', body: { email: registeredEmail } });
-      toast(res.message || 'Verification email resent!');
+      toast(res.message || 'Verification code resent!');
     } catch (err) {
       toast(err.message, 'bad');
     } finally {
@@ -222,26 +256,86 @@ export function Register() {
     >
       {registeredEmail ? (
         <div className="stack">
-          <div className="form-success" role="status">
-            <div className="row" style={{ alignItems: 'center', gap: 8 }}>
-              <Mail size={18} />
-              <strong style={{ fontSize: 'var(--t-md)' }}>Check your email</strong>
+          {verifiedSuccess ? (
+            <div className="form-success" role="status">
+              <div className="row" style={{ alignItems: 'center', gap: 8 }}>
+                <CheckCircle2 size={20} />
+                <strong style={{ fontSize: 'var(--t-md)' }}>Email verified!</strong>
+              </div>
+              <p style={{ margin: '6px 0 0', fontSize: 'var(--t-sm)' }}>
+                Taking you to explore Nepal now…
+              </p>
             </div>
-          </div>
-          <p>
-            We've sent a verification link to <strong>{registeredEmail}</strong>.
-          </p>
-          <p className="small muted">
-            Please check your inbox (and spam folder) and click the link to verify your email. Once verified, you can log in.
-          </p>
-          <div className="row" style={{ marginTop: 12, gap: 10 }}>
-            <Link to="/login" className="btn btn-primary">
-              Go to log in <ArrowRight size={16} className="arrow" />
-            </Link>
-            <button type="button" className="btn btn-quiet" disabled={resending} onClick={resend}>
-              {resending ? 'Sending…' : 'Resend verification email'}
-            </button>
-          </div>
+          ) : (
+            <>
+              <div className="form-success" role="status">
+                <div className="row" style={{ alignItems: 'center', gap: 8 }}>
+                  <Mail size={18} />
+                  <strong style={{ fontSize: 'var(--t-md)' }}>Check your inbox</strong>
+                </div>
+              </div>
+              <p>
+                We've sent a 6-digit verification code to <strong>{registeredEmail}</strong>.
+              </p>
+
+              <form onSubmit={handleVerifyCode} className="stack" style={{ marginTop: 8 }}>
+                <div className="field">
+                  <label htmlFor="otp-input" style={{ fontWeight: 600 }}>Enter 6-Digit Code</label>
+                  <input
+                    id="otp-input"
+                    className="input mono"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={code}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setCode(v);
+                      if (v.length === 6) setCodeError('');
+                    }}
+                    style={{
+                      fontSize: 24,
+                      letterSpacing: 8,
+                      textAlign: 'center',
+                      fontWeight: 700,
+                      padding: '12px 16px',
+                      background: 'var(--bg-card)',
+                      borderColor: code.length === 6 ? 'var(--terracotta)' : undefined,
+                    }}
+                    autoFocus
+                    required
+                  />
+                </div>
+
+                {codeError && <p className="form-error" role="alert">{codeError}</p>}
+
+                <div className="row" style={{ gap: 10, marginTop: 4 }}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={verifying || code.trim().length !== 6}
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
+                    {verifying ? 'Verifying…' : 'Verify Code'} <ArrowRight size={16} className="arrow" />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-quiet"
+                    disabled={resending}
+                    onClick={resend}
+                  >
+                    {resending ? 'Sending…' : 'Resend Code'}
+                  </button>
+                </div>
+              </form>
+
+              <p className="tiny muted" style={{ marginTop: 8 }}>
+                Didn't see it? Please check your spam or promotion folder. You can also click the direct link inside the email.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <form className="stack" onSubmit={submit} noValidate>
@@ -478,8 +572,13 @@ export function VerifyEmail() {
   const [params] = useSearchParams();
   const token = params.get('token') || '';
   const { user } = useAuth();
-  const [status, setStatus] = useState('pending'); // 'pending' | 'success' | 'error'
+  const nav = useNavigate();
+  const [status, setStatus] = useState(token ? 'pending' : 'idle'); // 'idle' | 'pending' | 'success' | 'error'
   const [message, setMessage] = useState('');
+  const [manualCode, setManualCode] = useState('');
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
   const verifiedRef = useRef(false);
 
   useEffect(() => {
@@ -489,12 +588,12 @@ export function VerifyEmail() {
       return;
     }
     if (!token) {
-      setStatus('error');
-      setMessage('No verification token was provided in the link.');
+      setStatus('idle');
       return;
     }
     if (verifiedRef.current) return;
     verifiedRef.current = true;
+    setStatus('pending');
 
     api(`/auth/verify?token=${encodeURIComponent(token)}`)
       .then((res) => {
@@ -506,9 +605,35 @@ export function VerifyEmail() {
       })
       .catch((err) => {
         setStatus('error');
-        setMessage(err.message || 'Verification link is invalid or has already expired.');
+        setMessage(err.message || 'Verification link or code is invalid or has expired.');
       });
   }, [token, user]);
+
+  const handleManualSubmit = async (e) => {
+    e.preventDefault();
+    const cleanCode = manualCode.trim();
+    if (!cleanCode) {
+      setFormError('Please enter your 6-digit verification code.');
+      return;
+    }
+    setFormError('');
+    setSubmitting(true);
+    try {
+      const res = await api('/auth/verify', {
+        method: 'POST',
+        body: { code: cleanCode, email: email ? email.trim() : undefined },
+      });
+      if (res.token) {
+        tokenStore.set(res.token);
+      }
+      setStatus('success');
+      setMessage(res.message || 'Email verified successfully! You are all set to explore Nepal.');
+    } catch (err) {
+      setFormError(err.message || 'Invalid or expired code. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <AuthShell
@@ -517,12 +642,74 @@ export function VerifyEmail() {
       aside="Confirming your email keeps your saved trips, reviews and account secure."
     >
       <div className="stack">
+        {status === 'idle' && (
+          <form onSubmit={handleManualSubmit} className="stack">
+            <p className="hint">
+              Enter the 6-digit verification code sent to your email to activate your account:
+            </p>
+            <div className="field">
+              <label htmlFor="ver-email">Email (optional)</label>
+              <input
+                id="ver-email"
+                className="input"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="ver-code" style={{ fontWeight: 600 }}>6-Digit Verification Code</label>
+              <input
+                id="ver-code"
+                className="input mono"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                placeholder="123456"
+                value={manualCode}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setManualCode(v);
+                  if (v.length === 6) setFormError('');
+                }}
+                style={{
+                  fontSize: 24,
+                  letterSpacing: 8,
+                  textAlign: 'center',
+                  fontWeight: 700,
+                  padding: '12px 16px',
+                  background: 'var(--bg-card)',
+                  borderColor: manualCode.length === 6 ? 'var(--terracotta)' : undefined,
+                }}
+                autoFocus
+                required
+              />
+            </div>
+
+            {formError && <p className="form-error" role="alert">{formError}</p>}
+
+            <button
+              type="submit"
+              className="btn btn-primary btn-lg"
+              disabled={submitting || manualCode.trim().length !== 6}
+            >
+              {submitting ? 'Verifying…' : 'Verify Account'} <ArrowRight size={18} className="arrow" />
+            </button>
+            <p className="small muted">
+              Back to <Link to="/login">Log in</Link> or <Link to="/register">Create new account</Link>
+            </p>
+          </form>
+        )}
+
         {status === 'pending' && (
           <div className="row" style={{ alignItems: 'center', gap: 12, padding: '16px 0' }}>
             <div className="spinner" />
             <span>Verifying your email address…</span>
           </div>
         )}
+
         {status === 'success' && (
           <>
             <div className="form-success" role="status">
@@ -544,16 +731,24 @@ export function VerifyEmail() {
             </div>
           </>
         )}
+
         {status === 'error' && (
           <>
             <div className="form-error" role="alert">
               <p style={{ margin: 0, fontWeight: 500 }}>{message}</p>
             </div>
             <p className="small muted">
-              The verification link might have already expired or is incomplete.
+              The verification link or code might have expired. You can try entering your code manually or resend a new one.
             </p>
             <div className="row" style={{ marginTop: 8, gap: 12 }}>
-              <Link to="/login" className="btn btn-primary">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => { setStatus('idle'); setFormError(''); }}
+              >
+                Enter Code Manually
+              </button>
+              <Link to="/login" className="btn btn-quiet">
                 Go to Log in
               </Link>
             </div>

@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'node:url';
 import { UPLOAD_DIR } from './paths.js';
-import { query } from './db.js';
+import { query, ensureMigrations } from './db.js';
 import { requireAuth, ah } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import destinationRoutes, { card } from './routes/destinations.js';
@@ -46,6 +46,12 @@ app.get('/api/health', ah(async (_req, res) => {
   await query('SELECT 1');
   res.json({ ok: true });
 }));
+
+// Auto-run schema migrations on incoming auth requests (ensures TiDB Cloud has google_id column)
+app.use('/api/auth', async (_req, _res, next) => {
+  await ensureMigrations();
+  next();
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/destinations', destinationRoutes);
 app.use('/api/trips', tripRoutes);

@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import https from 'node:https';
 import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
 import { signToken, requireAuth, ah } from '../middleware/auth.js';
@@ -30,6 +31,92 @@ const publicUser = (u) => ({
 function generateOtp() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
+
+/** Verifies Google ID token directly with Google OAuth2 API */
+function verifyGoogleCredential(credential) {
+  return new Promise((resolve, reject) => {
+    const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`;
+    const req = https.get(url, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (res.statusCode !== 200 || data.error) {
+            return reject(new Error(data.error_description || data.error || 'Invalid Google credential'));
+          }
+          resolve(data);
+        } catch (e) {
+          reject(new Error('Failed to parse Google response'));
+        }
+      });
+    });
+    req.on('error', (err) => reject(new Error(`Google connection failed: ${err.message}`)));
+    req.setTimeout(8000, () => {
+      req.destroy();
+      reject(new Error('Google verification timed out'));
+    });
+  });
+}
+
+// POST /api/auth/google - Authenticate or register with Google OAuth
+r.post('/google', ah(async (req, res) => {
+  const { credential } = req.body || {};
+  if (!credential) return res.status(400).json({ error: 'Missing Google credential' });
+
+  let googleUser;
+  try {
+    googleUser = await verifyGoogleCredential(credential);
+  } catch (err) {
+    return res.status(401).json({ error: err.message || 'Google authentication failed' });
+  }
+
+  const { sub: googleId, email, name, picture } = googleUser;
+  if (!email) return res.status(400).json({ error: 'Google account has no associated email' });
+
+  const cleanEmail = email.toLowerCase().trim();
+
+  // Check if user exists by google_id or email
+  let [user] = await query('SELECT * FROM users WHERE google_id = ?', [googleId]);
+
+  if (!user) {
+    const [existingEmailUser] = await query('SELECT * FROM users WHERE email = ?', [cleanEmail]);
+    if (existingEmailUser) {
+      // Link google_id to existing account, mark verified, and set avatar if empty
+      user = existingEmailUser;
+      await query(
+        'UPDATE users SET google_id = ?, is_verified = 1, avatar_url = CASE WHEN avatar_url = \'\' THEN ? ELSE avatar_url END WHERE id = ?',
+        [googleId, picture || '', user.id]
+      );
+      const [refreshed] = await query('SELECT * FROM users WHERE id = ?', [user.id]);
+      user = refreshed;
+    } else {
+      // Create new user directly from Google profile
+      const userName = (name && name.trim()) || cleanEmail.split('@')[0] || 'Traveler';
+      const result = await query(
+        'INSERT INTO users (name, email, password_hash, google_id, avatar_url, is_verified, is_active) VALUES (?, ?, NULL, ?, ?, 1, 1)',
+        [userName, cleanEmail, googleId, picture || '']
+      );
+      const [newUser] = await query('SELECT * FROM users WHERE id = ?', [result.insertId]);
+      user = newUser;
+
+      // Send branded welcome email (non-blocking)
+      sendWelcomeEmail({ to: user.email, name: user.name, req }).catch((err) =>
+        console.error('[email:google-welcome]', err.message)
+      );
+    }
+  }
+
+  if (!user.is_active) {
+    return res.status(403).json({ error: 'This account has been deactivated' });
+  }
+
+  res.json({
+    ok: true,
+    token: signToken(user),
+    user: publicUser(user),
+  });
+}));
 
 r.post('/register', ah(async (req, res) => {
   const { name, email, password, interests, homeCityId } = req.body || {};

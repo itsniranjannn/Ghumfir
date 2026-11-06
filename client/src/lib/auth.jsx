@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
     return d.user;
   };
   const login = useCallback(async (email, password) => finish(await api('/auth/login', { method: 'POST', body: { email, password } })), []);
+  const googleLogin = useCallback(async (credential) => finish(await api('/auth/google', { method: 'POST', body: { credential } })), []);
   const register = useCallback(async (body) => api('/auth/register', { method: 'POST', body }), []);
   const logout = useCallback(() => { tokenStore.set(null); setUser(null); }, []);
   const updateProfile = useCallback(async (body) => {
@@ -44,7 +45,10 @@ export function AuthProvider({ children }) {
     return d.user;
   }, []);
 
-  const value = useMemo(() => ({ user, ready, login, register, logout, updateProfile, uploadAvatar }), [user, ready, login, register, logout, updateProfile, uploadAvatar]);
+  const value = useMemo(
+    () => ({ user, ready, login, googleLogin, register, logout, updateProfile, uploadAvatar }),
+    [user, ready, login, googleLogin, register, logout, updateProfile, uploadAvatar]
+  );
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
 

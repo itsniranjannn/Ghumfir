@@ -9,6 +9,7 @@ import { SplitWords } from '../components/Motion.jsx';
 import { api, tokenStore } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import { useDocumentTitle, useMeta, useToast } from '../lib/ui.jsx';
+import GoogleAuthButton from '../components/GoogleAuthButton.jsx';
 
 function AuthShell({ title, np, children, aside }) {
   return (
@@ -108,6 +109,17 @@ export function Login() {
       {params.get('reason') === 'save' && (
         <p className="hint">Log in or create a free account to keep this trip. Your draft is safe in the meantime.</p>
       )}
+      <GoogleAuthButton
+        text="signin_with"
+        onSuccess={(u) => nav(next || (u.role === 'admin' ? '/admin' : '/explore'), { replace: true })}
+      />
+
+      <div className="auth-separator" style={{ display: 'flex', alignItems: 'center', margin: '14px 0 16px', color: 'var(--muted)' }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <span className="small mono" style={{ padding: '0 12px', fontSize: 12 }}>OR WITH EMAIL</span>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      </div>
+
       <form className="stack" onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="em">Email</label>
@@ -338,7 +350,19 @@ export function Register() {
           )}
         </div>
       ) : (
-        <form className="stack" onSubmit={submit} noValidate>
+        <>
+          <GoogleAuthButton
+            text="signup_with"
+            onSuccess={(u) => nav(u.role === 'admin' ? '/admin' : '/explore', { replace: true })}
+          />
+
+          <div className="auth-separator" style={{ display: 'flex', alignItems: 'center', margin: '14px 0 16px', color: 'var(--muted)' }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span className="small mono" style={{ padding: '0 12px', fontSize: 12 }}>OR CREATE WITH EMAIL</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          </div>
+
+          <form className="stack" onSubmit={submit} noValidate>
           <div className="field">
             <label htmlFor="nm">Name</label>
             <input id="nm" className="input" autoComplete="name" value={form.name} onChange={set('name')} />
@@ -387,6 +411,7 @@ export function Register() {
             {busy ? 'Creating…' : 'Create account'} <ArrowRight size={18} className="arrow" />
           </button>
         </form>
+        </>
       )}
       {!registeredEmail && (
         <p className="small muted">

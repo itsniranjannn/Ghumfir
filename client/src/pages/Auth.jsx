@@ -182,7 +182,7 @@ export function Login() {
       <p className="small muted">
         New here? <Link to={`/register${next ? `?next=${encodeURIComponent(next)}` : ''}`}>Create an account</Link>
       </p>
-      <p className="tiny muted mono">Demo: demo@ghumfir.test / demo123</p>
+
     </AuthShell>
   );
 }

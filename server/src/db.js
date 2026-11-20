@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
-const sslOption = process.env.DB_SSL === 'true' || process.env.DATABASE_URL?.includes('ssl')
+const sslOption = process.env.DB_SSL === 'true' || process.env.DATABASE_URL?.includes('ssl') || process.env.DB_HOST?.includes('tidbcloud.com')
   ? { minVersion: 'TLSv1.2', rejectUnauthorized: true }
   : undefined;
 

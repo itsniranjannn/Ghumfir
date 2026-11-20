@@ -284,6 +284,10 @@ export function Footer() {
         <span className="mono tiny muted" title="Coordinates of Kathmandu, Nepal">Kathmandu · 27.7172° N, 85.3240° E</span>
         <NepalClock />
         <span className="mono tiny muted">© {new Date().getFullYear()} Ghumfir</span>
+        <div className="row" style={{ gap: 12 }}>
+          <Link to="/privacy" className="tiny muted">Privacy</Link>
+          <Link to="/terms" className="tiny muted">Terms</Link>
+        </div>
         <button className="btn btn-quiet btn-sm to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Back to top">
           <ArrowUp size={14} /> Top
         </button>

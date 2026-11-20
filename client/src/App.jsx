@@ -13,6 +13,8 @@ import TripView from './pages/TripView.jsx';
 import SharedTrip from './pages/SharedTrip.jsx';
 import HowItWorks from './pages/HowItWorks.jsx';
 import Credits from './pages/Credits.jsx';
+import Privacy from './pages/Privacy.jsx';
+import Terms from './pages/Terms.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Admin from './pages/admin/Admin.jsx';
 
@@ -52,6 +54,10 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/credits" element={<Credits />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/privacy-policy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/terms-of-service" element={<Terms />} />
           <Route path="/t/:code" element={<SharedTrip />} />
           <Route path="/trips" element={<RequireAuth><Trips /></RequireAuth>} />
           <Route path="/trips/:id" element={<RequireAuth><TripView /></RequireAuth>} />
